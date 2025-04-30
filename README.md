@@ -28,6 +28,6 @@ run_or_focus.py [workspace] application [application arguments]
 ```ini
 # hypr.conf
 $run_or_focus = /path/to/run_or_focus.py
-bind = SUPER, O, exec,  run_or_focus 4 obsidian
-bind = SUPER, C, exec, run_or_focus 2, code --profile blank_profile
+bind = SUPER, O, exec, run_or_focus 4 obsidian
+bind = SUPER, C, exec, run_or_focus 2 code --profile blank_profile
 ```
