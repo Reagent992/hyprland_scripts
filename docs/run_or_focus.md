@@ -1,7 +1,9 @@
 # Run or focus
+
 ## 📋 What It does
 
 A utility script for **Hyprland** that ensures only one instance of a specific application is running.
+
 - If the app is already running, it will focus the window.
 - If not, it will launch the app, optionally on a specified workspace.
 
@@ -13,7 +15,9 @@ A utility script for **Hyprland** that ensures only one instance of a specific a
 - `notify-send` (typically provided by `libnotify`)
 
 ## 🚀 Installation
+
 1. Clone the repository or download the script and make it executable:
+
 ```bash
 git clone https://github.com/yourusername/hypr-single-launch.git
 cd hypr-single-launch
@@ -21,6 +25,7 @@ chmod +x run_or_focus.py
 ```
 
 ## 🛠️ Usage
+
 ```bash
 run_or_focus.py [workspace] application [application arguments]
 ```
