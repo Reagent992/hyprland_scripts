@@ -89,8 +89,6 @@ def main():
     if containers_counter > 0:
         tooltip = table_builder(get_containers())
         print(output_builder("on", f"{containers_counter}", tooltip))
-    else:
-        print(output_builder("off", ""))
 
 
 if __name__ == "__main__":
