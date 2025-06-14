@@ -8,14 +8,11 @@
 # License: MIT
 # 2025
 
-from hyprpy import Hyprland
-
-
 import argparse
 import subprocess
 
+from hyprpy import Hyprland
 from hyprpy.components.windows import Window
-
 
 DESCRIPTION = """Run a single instance of an application in Hyperland:
 focus it if it's already running,

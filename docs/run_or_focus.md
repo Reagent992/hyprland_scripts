@@ -14,7 +14,7 @@ A utility script for **Hyprland** that ensures only one instance of a specific a
 - `hyprctl` (should come with Hyprland)
 - `notify-send` (typically provided by `libnotify`)
 
-`run_or_focus_hyprpy.py` it another version of the same script. It has **uv** as a dependency and uses the `hyprpy` lib. It was created just for fun.
+`run_or_focus_hyprpy.py` is another version of the same script. It has **uv** as a dependency and uses the `hyprpy` lib. It was created just for fun.
 
 ## 🚀 Installation
 
