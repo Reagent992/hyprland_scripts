@@ -3,6 +3,7 @@ import json
 import pickle
 import subprocess
 import tempfile
+import time
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -28,7 +29,7 @@ class TimerState(Enum):
 class PomodoroData:
     time_left: int = 0
     pomodoros: int = 0
-    last_update: int = 0
+    last_update: int = int(time.time())
     status: TimerState = TimerState.inactive
 
 
@@ -36,10 +37,32 @@ class PomodoroData:
 class Pomodoro:
     data: PomodoroData
 
-    def toggle(self) -> None: ...
-    def reset(self) -> None: ...
-    def stop(self) -> None: ...
-    def skip(self) -> None: ...
+    def toggle(self) -> None:
+        if self.data.status is TimerState.inactive:
+            self.data.status = TimerState.pomodoro
+            self.data.time_left = POMODORO
+        elif self.data.status is TimerState.paused:
+            self.data.status = TimerState.pomodoro
+        else:
+            self.data.status = TimerState.paused
+
+    def reset(self) -> None:
+        self.data.status = TimerState.inactive
+        self.data.time_left = 0
+        self.data.pomodoros = 0
+
+    def skip(self) -> None:
+        if self.data.status in (TimerState.pomodoro, TimerState.paused):
+            self.data.pomodoros += 1
+            if self.data.pomodoros % 4 == 0:
+                self.data.status = TimerState.long_break
+                self.data.time_left = LONG_BREAK
+            else:
+                self.data.status = TimerState.short_break
+                self.data.time_left = SHORT_BREAK
+        else:
+            self.data.status = TimerState.pomodoro
+            self.data.time_left = POMODORO
 
 
 def read_or_create_data() -> PomodoroData:
@@ -49,6 +72,12 @@ def read_or_create_data() -> PomodoroData:
     else:
         data = PomodoroData()
     return data
+
+
+def save_data(data: PomodoroData) -> None:
+    data.last_update = int(time.time())
+    with DATA_FILE.open("wb") as f:
+        pickle.dump(data, f)
 
 
 def format_time(seconds: int) -> str:
@@ -115,7 +144,8 @@ def main():
         pomodoro.skip()
     elif args.action == "reset":
         pomodoro.reset()
-    # return output_for_waybar(data)
+    save_data(data)
+    return output_for_waybar(data)
 
 
 if __name__ == "__main__":
