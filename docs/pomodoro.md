@@ -36,3 +36,7 @@ menuitem {
   border-radius: 15px;
 }
 ```
+
+## Info
+
+You shouldnt't use it at two waybars(two monitors) at the same time, due to a change of the race condition.

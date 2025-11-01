@@ -8,7 +8,7 @@
     </child>
     <child>
       <object class="GtkMenuItem" id="skip">
-        <property name="label" translatable="yes">Skip Session</property>
+        <property name="label" translatable="yes">Skip</property>
       </object>
     </child>
     <child>
