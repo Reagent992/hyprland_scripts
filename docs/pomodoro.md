@@ -10,11 +10,11 @@ This pomodoro timer is an improved version of the timer from the repository: htt
 // waybar's config.jsonc
   "custom/pomodoro": {
     "exec": "~/path/to/pomodoro.py",
-    "on-click-right": "~/path/to/pomodoro.py toggle",
+    "on-click": "~/path/to/pomodoro.py toggle",
     "return-type": "json",
     "interval": 1,
     "format": "{}",
-    "menu": "on-click",
+    "menu": "on-click-right",
     "menu-file": "~/path/to/pomodoro-menu.xml",
     "menu-actions": {
       "toggle": "~/path/to/pomodoro.py toggle",
