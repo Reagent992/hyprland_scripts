@@ -1,5 +1,8 @@
 # Run or focus
 
+> [!info]
+> [use this instead](https://github.com/basecamp/omarchy/blob/dev/bin/omarchy-launch-or-focus)
+
 ## 📋 What It does
 
 A utility script for **Hyprland** that ensures only one instance of a specific application is running.
