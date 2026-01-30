@@ -8,7 +8,6 @@ import json
 import subprocess
 from typing import Any
 
-
 DESCRIPTION = """Run a single instance of an application in Hyperland:
 focus it if it's already running,
 or launch it otherwise (optionally on a specific workspace)."""
@@ -32,7 +31,7 @@ def find_running_app(
 
 
 def focus_window(app_name: str) -> None:
-    subprocess.run(
+    _ = subprocess.run(
         ("hyprctl", "dispatch", "focuswindow", f"class:{app_name}"),
         stdout=subprocess.DEVNULL,
         check=True,
@@ -40,7 +39,7 @@ def focus_window(app_name: str) -> None:
 
 
 def open_app(app_name: str, workspace: int | None, rest_args: list[str]) -> None:
-    subprocess.run(
+    _ = subprocess.run(
         (
             "hyprctl",
             "dispatch",
@@ -58,13 +57,13 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=DESCRIPTION,
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "workspace",
         type=int,
         nargs="?",
     )
-    parser.add_argument("app_name", type=str, metavar="application")
-    parser.add_argument(
+    _ = parser.add_argument("app_name", type=str, metavar="application")
+    _ = parser.add_argument(
         "rest_args",
         metavar="APP ARGS",
         nargs=argparse.REMAINDER,
@@ -74,7 +73,7 @@ def get_args() -> argparse.Namespace:
 
 
 def send_notification(notificatin_msg: str, app_name: str) -> None:
-    subprocess.run(
+    _ = subprocess.run(
         (
             "notify-send",
             f"-a {app_name}",
