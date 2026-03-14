@@ -14,7 +14,7 @@ main Kitty instance.
 - It communicates with Hyprland and Kitty through sockets.
 - The `-d` argument is substituted with `--cwd` because `kitty` uses `-d`,
   but `kitten @ launch` uses `--cwd`.
-- Launching kitty as UWSM service.
+- Launches kitty as a UWSM service.
 
 ## Requirements:
 
@@ -36,7 +36,7 @@ bind = $Mod, N, exec, [workspace 2] $reuse_terminal -d ~/dev/foo nvim  # Open nv
 --------------------------------------------------------------------------------
 ## Dev notes:
 
-- `--instance-group` seems to only be needed to separate two kitty instances running with the --single-instance flag.
+- `--instance-group` seems to be needed only to separate two kitty instances running with the --single-instance flag.
 - Executing `hyprctl clients` through a socket returns a response without JSON formatting.
 - Can't get pid of kitty out of `kitty @ ls`.
 --------------------------------------------------------------------------------
@@ -161,7 +161,7 @@ def _parse_clients(raw_text: str) -> list[HyprClient]:
 
 
 def _get_main_kitty_window_pid_by_class(windows: list[HyprClient]) -> str | None:
-    """Return the PID of the first window matching the configured Kitty os-window-class."""
+    """Return the PID of the first window matching the configured Kitty OS window class."""
     for window in windows:
         if window.class_ == MAIN_KITTY_CLASS:
             logger.info("Main kitty window PID found: %s", window.pid)
@@ -206,7 +206,7 @@ def select_kitty_socket() -> Path | None:
     """Select the Kitty socket to target.
 
     - Even if there is only one socket, it might not be from the main window.
-    - Expects that the socket named like "kitty*".
+    - Expects sockets named like "kitty*".
     """
     sockets = list(Path(KITTY_SOCKET_DIR).glob(f"{KITTY_SOCKET_NAME}*"))
     logger.info("Found sockets: %s", sockets)
@@ -269,7 +269,7 @@ def kitty_launch_through_socket(
         [workspace 2] from hyprland won't work here, so we need to explicitly execute
         focuswindow after.
     - `--match` is used because one kitty instance can have two windows, but we need
-        to always open in the main one. Selects old window.
+        to always open in the main one. Selects the oldest window.
     """
     logger.info("Launch Kitty through socket: %s", socket_path)
     command = [
@@ -301,9 +301,9 @@ def kitty_launch_through_socket(
 def kitty_launch(args: Iterable[str]) -> None:
     """Launch the first Kitty instance.
 
-    - `--single-instance` is allow to open new os-window is same instance through `kitty --single-instance`.
-        Without it `kitty --single-instance` will open new instance.
-    - Launch as `uwsm app -t service --` creating a new pid, so we can't set the pid in socket name here.
+    - `--single-instance` allows opening a new OS window in the same instance via `kitty --single-instance`.
+        Without it, `kitty --single-instance` will open a new instance.
+    - Launched as `uwsm app -t service --`, which creates a new PID, so we can't set the PID in the socket name here.
     """
     uwsm_run_as_service = ["app", "-t", "service", "--"]
     kitty = [
