@@ -4,17 +4,17 @@
 # 2026
 """
 # What is it?
-This Python script lets you switch between Kitty and Hyprland windows with one hotkey.
+This Python script lets you switch between Kitty and Hyprland windows with a single hotkey.
 
 For example:
-You have two OS windows open. The first is Kitty with two windows split vertically.
+You have two OS-level windows open. The first is Kitty with two windows split vertically.
 Your cursor is in the left Kitty window. The first press of `SUPER+L` jumps to the right
-Kitty window; the second press jumps to the OS window on the right.
+Kitty window; the second press jumps to the OS-level window on the right.
 
-- Based on top of https://github.com/joe-butler-23/hypr-kitty-nav
+- Inspired by https://github.com/joe-butler-23/hypr-kitty-nav
 
 ## Requirements
-- python 3.12+
+- Python 3.12+
 - lsof
 - Hyprland
 - Kitty with `allow_remote_control=socket-only` and `listen-on=unix:/tmp/kitty`
@@ -49,7 +49,7 @@ DIRECTION_MAP: Final = {
     "up": ("u", "top"),
     "down": ("d", "bottom"),
 }
-DEBUG = False  # Write logs to file. `tail -f /tmp/hypr_kitty_nav.log` to read it
+DEBUG = False  # Write logs to a file. `tail -f /tmp/hypr_kitty_nav.log` to read it
 if DEBUG:
     logging.basicConfig(
         format="%(asctime)s:%(levelname)s:line %(lineno)d:%(message)s",
@@ -74,7 +74,7 @@ def get_kitty_socket(active_kitty_pid: str) -> Path | None:
         if active_kitty_pid == pid:
             logger.info("Found socket path: %s", socket_path)
             return Path(socket_path)
-    logger.error("Cannot find proper Kitty socket.")
+    logger.error("Cannot find a matching Kitty socket.")
 
 
 def get_active_kitty_pid(hyprland_socket_path: Path) -> str | None:
@@ -100,7 +100,7 @@ def get_active_kitty_pid(hyprland_socket_path: Path) -> str | None:
                 if match:
                     return match.group(group_name)
     except (OSError, socket.error):
-        logger.exception("Error while getting an active kitty pid.")
+        logger.exception("Error while getting the active Kitty PID.")
 
 
 def hypr_dispatch(socket_path: Path, direction: str) -> None:
@@ -112,7 +112,7 @@ def hypr_dispatch(socket_path: Path, direction: str) -> None:
             cmd = f"dispatch movefocus {direction}"
             sock.sendall(cmd.encode())
     except (OSError, socket.error):
-        logger.exception("Error while focusing window through Hyprland socket.")
+        logger.exception("Error while focusing a window through the Hyprland socket.")
 
 
 def main():
@@ -132,7 +132,7 @@ def main():
     if active_kitty_pid := get_active_kitty_pid(HYPRLAND_SOCKET):
         kitty_socket = get_kitty_socket(active_kitty_pid)
         if kitty_socket:
-            logger.info("Execute kitty focus-window through socket: %s", kitty_socket)
+            logger.info("Execute kitty focus-window via socket: %s", kitty_socket)
             result = subprocess.run(
                 [
                     "kitty",
@@ -146,7 +146,7 @@ def main():
             )
             if result.returncode == 0:
                 return
-            logger.error("Sending to Kitty socket failed")
+            logger.error("Sending to the Kitty socket failed")
 
     hypr_dispatch(HYPRLAND_SOCKET, move_dir)
 
