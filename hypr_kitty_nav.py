@@ -60,7 +60,12 @@ if DEBUG:
 
 def get_kitty_socket(active_kitty_pid: str) -> Path | None:
     """Get the socket of the active Kitty instance by its PID."""
-    cmd = ["lsof", "-Fpn", "--", *KITTY_SOCKETS_PATH]
+    sockets = list(KITTY_SOCKETS_PATH)
+    if not sockets:
+        logger.error("No Kitty sockets found in /tmp (pattern: kitty*)")
+        return None
+
+    cmd = ["lsof", "-Fpn", "--", *sockets]
     result = subprocess.run(cmd, capture_output=True, text=True)
 
     for raw_pid, raw_socket_path in batched(result.stdout.splitlines(), 2):
