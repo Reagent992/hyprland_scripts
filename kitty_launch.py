@@ -67,7 +67,7 @@ HYPRLAND_SOCKET: Final = (
 )
 LOG_PATH: Final = gettempdir() + "/kitty_launch.log"
 SOCKET_TIMEOUT_SEC: Final = 2
-DEBUG: Final = True  # Write logs to file. `tail -f /tmp/kitty_launch.log` to read it
+DEBUG: Final = False  # Write logs to file. `tail -f /tmp/kitty_launch.log` to read it
 if DEBUG:
     logging.basicConfig(
         format="%(asctime)s:%(levelname)s:line %(lineno)d:%(message)s",
