@@ -14,7 +14,7 @@ from typing import Final, cast, final
 
 # logging
 Debug = False
-if os.environ.get("DEBUG") in ("TRUE", "True", "true", "1"):
+if os.environ.get("DEBUG", "").lower() in ("true", "1", "yes", "on"):
     Debug = True
     logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ DAILY_RESET_HOUR: Final = 4
 # Toggle settings
 ENABLE_LONG_BREAK: Final = True
 ENABLE_NOTIFICATIONS: Final = True
-ENABLE_DAILY_RESET: Final = False
+ENABLE_DAILY_RESET: Final = True
 
 
 class Action(StrEnum):
@@ -114,12 +114,13 @@ class Pomodoro:
         Automatically transitions between work and break states when timer expires.
         Sends notifications for completed sessions.
         """
+        now = datetime.now()  # noqa: DTZ005
         if self.status in (
             TimerState.WORK,
             TimerState.SHORT_BREAK,
             TimerState.LONG_BREAK,
         ):
-            elapsed = datetime.now() - self.last_update_date  # noqa: DTZ005
+            elapsed = now - self.last_update_date
             original_time_left = self.time_left
             self.time_left = max(0, self.time_left - abs(int(elapsed.total_seconds())))
             if self.time_left <= 0 and original_time_left > 0:
@@ -130,9 +131,9 @@ class Pomodoro:
                     send_notification("Break Complete!", "Time to focus")
                     self.status = TimerState.WORK
                     self.time_left = POMODORO
-        if ENABLE_DAILY_RESET and datetime.now() > self._next_4_am:  # noqa: DTZ005
+        if ENABLE_DAILY_RESET and now > self._next_4_am:
             self.pomodoros = 0
-            self._next_4_am = self._get_next_4_am(self.last_update_date)
+            self._next_4_am = self._get_next_4_am(now)
 
     def toggle(self) -> None:
         """Toggle between active and paused states.
