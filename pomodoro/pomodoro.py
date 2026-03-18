@@ -10,7 +10,7 @@ import tempfile
 from datetime import datetime, time, timedelta
 from enum import StrEnum
 from pathlib import Path
-from typing import Final, cast, final
+from typing import Final, cast, final, override
 
 # logging
 Debug = False
@@ -73,6 +73,22 @@ class Pomodoro:
         self._status = TimerState.IDLE
         self.last_update_date = datetime.now()  # noqa: DTZ005
         self._next_4_am = self._get_next_4_am(self.last_update_date)
+
+    @override
+    def __str__(self) -> str:
+        time_left = format_time(self.time_left)
+        last_update = self.last_update_date.isoformat(timespec="seconds")
+        next_reset = self._next_4_am.isoformat(timespec="seconds")
+        return (
+            "Pomodoro("
+            f"status={self.status.value}, "
+            f"previous_status={self.previous_status.value}, "
+            f"time_left={time_left}, "
+            f"pomodoros={self.pomodoros}, "
+            f"last_update={last_update}, "
+            f"next_reset={next_reset}"
+            ")"
+        )
 
     @staticmethod
     def _get_next_4_am(last_update_date: datetime) -> datetime:
