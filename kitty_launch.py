@@ -147,12 +147,12 @@ def _parse_clients(raw_text: str) -> list[HyprClient]:
                 key, value = key.strip(), value.strip()
                 if key in ("pid", "class", "title"):
                     data[key] = value
+        missing = {"class", "title", "pid"} - data.keys()
+        if missing:
+            logger.debug("Skipping malformed client block, missing: %s", missing)
+            continue
         clients.append(
-            HyprClient(
-                class_=data["class"],
-                title=data["title"],
-                pid=data["pid"],
-            )
+            HyprClient(class_=data["class"], title=data["title"], pid=data["pid"])
         )
     logger.debug(
         "Found these hyprland windows: %s", "\n".join(str(client) for client in clients)
@@ -183,23 +183,21 @@ def select_socket_for_main_kitty(sockets: list[Path]) -> Path | None:
       name, e.g. "kitty-1389".
     """
     pid = get_pid_of_main_kitty_window()
-    if pid:
-        logger.info("Got pid of active kitty")
-        for socket in sockets:
-            match = (
-                pid in socket.name or KITTY_SOCKET_NAME == socket.name
-            ) and socket.is_socket()
-            logger.info(
-                "socket: %s, pid: %s, match: %s",
-                socket,
-                pid,
-                match,
-            )
-            if match:
-                logger.info("Found socket matching pid: %s", socket)
-                return socket
-        logger.info("No suitable socket found among sockets.")
-    logger.info("Can't find main kitty window among opened kitty windows.")
+    if not pid:
+        logger.info("Can't find main kitty window among opened kitty windows.")
+        return None
+
+    logger.info("Got pid of active kitty")
+    for socket_ in sockets:
+        match = (
+            pid in socket_.name or KITTY_SOCKET_NAME == socket_.name
+        ) and socket_.is_socket()
+        logger.info("socket: %s, pid: %s, match: %s", socket, pid, match)
+        if match:
+            logger.info("Found socket matching pid: %s", socket)
+            return socket_
+    logger.info("No suitable socket found among sockets.")
+    return None
 
 
 def select_kitty_socket() -> Path | None:
@@ -216,20 +214,27 @@ def select_kitty_socket() -> Path | None:
         return select_socket_for_main_kitty(sockets)
 
 
+def _run_kitty_command(
+    socket_path: Path, args: list[str], *, capture: bool = False
+) -> subprocess.CompletedProcess[str]:
+    command = [
+        "kitty",
+        "@",
+        "--to",
+        f"unix:{str(socket_path.resolve())}",
+        *args,
+    ]
+    if capture:
+        return subprocess.run(command, capture_output=True, text=True)
+    return subprocess.run(command, text=True)
+
+
 def focus_kitty_tab(socket_path: Path, window_id: str) -> bool:
     """Focus a tab containing the specified kitty window id."""
-    result = subprocess.run(
-        [
-            "kitty",
-            "@",
-            "--to",
-            f"unix:{str(socket_path.resolve())}",
-            "focus-tab",
-            "--match",
-            f"window_id:{window_id}",
-        ],
-        capture_output=True,
-        text=True,
+    result = _run_kitty_command(
+        socket_path,
+        ["focus-tab", "--match", f"window_id:{window_id}"],
+        capture=True,
     )
     if result.returncode == 0:
         return True
@@ -243,11 +248,7 @@ def focus_kitty_tab(socket_path: Path, window_id: str) -> bool:
 
 def _get_kitty_remote_tree(socket_path: Path) -> list[KittyOsWindow] | None:
     """Get information about open Kitty windows from `kitty @ ls`."""
-    result = subprocess.run(
-        ["kitty", "@", "--to", f"unix:{str(socket_path.resolve())}", "ls"],
-        capture_output=True,
-        text=True,
-    )
+    result = _run_kitty_command(socket_path, ["ls"], capture=True)
     if result.returncode != 0:
         logger.error("Kitty remote ls failed with code: %s", result.returncode)
         return None
@@ -285,14 +286,7 @@ def kitty_launch_through_socket(
         to always open in the main one. Selects the oldest window.
     """
     logger.info("Launch Kitty through socket: %s", socket_path)
-    command = [
-        "/usr/bin/kitty",
-        "@",
-        "--to",
-        f"unix:{str(socket_path.resolve())}",
-        "launch",
-        f"--type={launch_type}",
-    ]
+    command = ["launch", f"--type={launch_type}"]
     window_id: str | None = None
     if launch_type == "tab":
         result = _get_kitty_remote_tree(socket_path)
@@ -300,15 +294,11 @@ def kitty_launch_through_socket(
             window_id = _parse_kitty_ls(result)
             logger.info("Found kitty window_id: %s, in kitty @ ls", window_id)
             command.extend([f"--match=window_id:{window_id}"])
-    logger.debug("Exec args: %s", " ".join((*command, *args)))
-    result = subprocess.run(
-        [
-            *command,
-            *args,
-        ],
-        capture_output=True,
-        text=True,
+    logger.debug(
+        "Exec args: %s",
+        " ".join(("kitty", "@", "--to", str(socket_path), *command, *args)),
     )
+    result = _run_kitty_command(socket_path, [*command, *args], capture=True)
     if result.returncode != 0:
         logger.error("Kitty remote launch failed with code: %s", result.returncode)
         if result.stdout:
