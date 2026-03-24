@@ -8,7 +8,7 @@
 
 - Starts the first Kitty as a UWSM service with a fixed socket and window class.
 - Subsequent runs open a new Kitty tab in that main window.
-- Focuses the main Kitty window after launching.
+- Focuses the newly created Kitty tab after launching.
 - Rewrites the first `-d` argument to `--cwd` for `kitty @ launch` compatibility.
 
 ## 🧱 Requirements

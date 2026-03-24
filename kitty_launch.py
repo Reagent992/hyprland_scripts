@@ -216,16 +216,29 @@ def select_kitty_socket() -> Path | None:
         return select_socket_for_main_kitty(sockets)
 
 
-def focus_kitty_window() -> None:
-    """Focus the main Kitty window in Hyprland."""
-    logger.debug("Sending focuswindow request to Hyprland socket: %s", HYPRLAND_SOCKET)
-    try:
-        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-            sock.settimeout(SOCKET_TIMEOUT_SEC)
-            sock.connect(str(HYPRLAND_SOCKET.resolve()))
-            sock.sendall(f"dispatch focuswindow class:{MAIN_KITTY_CLASS}".encode())
-    except (OSError, socket.error):
-        logger.exception("Error occurred while trying to connect to Hyprland socket.")
+def focus_kitty_tab(socket_path: Path, window_id: str) -> bool:
+    """Focus a tab containing the specified kitty window id."""
+    result = subprocess.run(
+        [
+            "kitty",
+            "@",
+            "--to",
+            f"unix:{str(socket_path.resolve())}",
+            "focus-tab",
+            "--match",
+            f"window_id:{window_id}",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        return True
+    logger.error("Kitty focus-tab failed with code: %s", result.returncode)
+    if result.stdout:
+        logger.error("Kitty focus-tab stdout: %s", result.stdout.strip())
+    if result.stderr:
+        logger.error("Kitty focus-tab stderr: %s", result.stderr.strip())
+    return False
 
 
 def _get_kitty_remote_tree(socket_path: Path) -> list[KittyOsWindow] | None:
@@ -262,7 +275,7 @@ def _parse_kitty_ls(kitty_ls: list[KittyOsWindow]) -> str:
 
 def kitty_launch_through_socket(
     socket_path: Path, args: Iterable[str], launch_type: str = "tab"
-) -> None:
+) -> str | None:
     """Launch Kitty through a remote-control socket.
 
     - Can't use `os.execvp` here because we need to focus on the window.
@@ -278,9 +291,9 @@ def kitty_launch_through_socket(
         "--to",
         f"unix:{str(socket_path.resolve())}",
         "launch",
-        "--no-response",
         f"--type={launch_type}",
     ]
+    window_id: str | None = None
     if launch_type == "tab":
         result = _get_kitty_remote_tree(socket_path)
         if result:
@@ -293,9 +306,22 @@ def kitty_launch_through_socket(
             *command,
             *args,
         ],
+        capture_output=True,
+        text=True,
     )
     if result.returncode != 0:
         logger.error("Kitty remote launch failed with code: %s", result.returncode)
+        if result.stdout:
+            logger.error("Kitty launch stdout: %s", result.stdout.strip())
+        if result.stderr:
+            logger.error("Kitty launch stderr: %s", result.stderr.strip())
+        return window_id
+
+    new_window_id = result.stdout.strip()
+    if new_window_id:
+        logger.info("Kitty launch returned window_id: %s", new_window_id)
+        return new_window_id
+    return window_id
 
 
 def kitty_launch(args: Iterable[str]) -> None:
@@ -343,8 +369,9 @@ def _main() -> None:
     kitty_socket = select_kitty_socket()
     if kitty_socket:
         args = substitute_args(args)
-        kitty_launch_through_socket(kitty_socket, args)
-        focus_kitty_window()
+        window_id = kitty_launch_through_socket(kitty_socket, args)
+        if window_id:
+            _ = focus_kitty_tab(kitty_socket, window_id)
     else:
         kitty_launch(args)
 
