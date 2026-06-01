@@ -5,13 +5,20 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "hyprpy>=0.2.0",
-    "pygithub>=2.8.1",
-    "pynvim>=0.6.0",
-    "python-dotenv>=1.2.1",
+  "hyprpy>=0.2.0",
+  "pygithub>=2.8.1",
+  "pynvim>=0.6.0",
+  "python-dotenv>=1.2.1",
 ]
 
 [dependency-groups]
-dev = [
-    "ipython>=9.9.0",
-]
+dev = ["ipython>=9.9.0", "prek>=0.4.3", "ruff>=0.15.15", "ty>=0.0.40"]
+
+[tool.ruff]
+line-length = 120
+[tool.ruff.lint]
+ignore = ["D100", "D102", "D104", "RUF001", "RUF002", "RUF003", "COM812"]
+select = ["ALL"]
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+[tool.ty]

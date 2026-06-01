@@ -1,0 +1,22 @@
+---
+default_stages: [pre-commit, pre-push]
+exclude: |
+  (?x)(
+    __pycache__/.*|      # cache
+    \.venv/.*            # venv
+  )
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: uv run ruff check --fix --unsafe-fixes
+        language: system
+        types_or: [python, pyi]
+
+      - id: ty-check
+        name: ty
+        entry: uv run ty check
+        types_or: [python, pyi]
+        language: system
+...
