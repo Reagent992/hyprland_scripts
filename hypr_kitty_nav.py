@@ -3,10 +3,12 @@
 # requires-python = ">=3.12"
 # dependencies = ["pynvim"]
 # ///
-# Author: Sadykov Miron <MironSadykov@yandex.ru>
-# License: MIT
-# 2026
-"""
+
+"""Hyprland + Kitty + Neovim Navigation Script.
+
+Author: Sadykov Miron <MironSadykov@yandex.ru>
+License: MIT
+2026
 # What is it?
 This Python script lets you switch between Kitty and Hyprland windows with a single hotkey.
 
@@ -44,15 +46,14 @@ import pynvim
 
 # Constants
 logger: Final = logging.getLogger(__name__)
-KITTY_SOCKETS_PATH: Final = Path("/tmp").glob("kitty*")
+KITTY_SOCKETS_PATH: Final = Path(gettempdir()).glob("kitty*")
 LOG_PATH: Final = gettempdir() + "/hypr_kitty_nav.log"
-XDG_RUNTIME_DIR: Final = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
+XDG_RUNTIME_DIR: Final = os.environ.get("XDG_RUNTIME_DIR", gettempdir())
 HYPRLAND_INSTANCE: Final = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", "")
-HYPRLAND_SOCKET: Final = (
-    Path(XDG_RUNTIME_DIR) / "hypr" / HYPRLAND_INSTANCE / ".socket.sock"
-)
+HYPRLAND_SOCKET: Final = Path(XDG_RUNTIME_DIR) / "hypr" / HYPRLAND_INSTANCE / ".socket.sock"
 NVIM_SOCKETS: Final = list(Path(XDG_RUNTIME_DIR).glob("nvim*"))
 SOCKET_TIMEOUT_SEC: Final = 2
+MININUM_ARGS: Final = 2
 DIRECTION_MAP: Final = {
     "left": ("l", "left"),
     "right": ("r", "right"),
@@ -65,7 +66,7 @@ NVIM_DIRECTION_MAP: Final = {
     "up": "k",
     "down": "j",
 }
-DEBUG = False  # Write logs to a file. `tail -f /tmp/hypr_kitty_nav.log` to read it
+DEBUG = True  # Write logs to a file. `tail -f /tmp/hypr_kitty_nav.log` to read it
 if DEBUG:
     logging.basicConfig(
         format="%(asctime)s:%(levelname)s:line %(lineno)d:%(message)s",
@@ -117,13 +118,14 @@ def get_kitty_socket(active_kitty_pid: str) -> Path | None:
     cmd = ["lsof", "-Fpn", "--", *sockets]
     result = subprocess.run(cmd, capture_output=True, text=True)
 
-    for raw_pid, raw_socket_path in batched(result.stdout.splitlines(), 2):
+    for raw_pid, raw_socket_path in batched(result.stdout.splitlines(), 2, strict=True):
         pid = raw_pid.strip().removeprefix("p")
         socket_path = raw_socket_path.removeprefix("n").removesuffix(" type=STREAM")
         if active_kitty_pid == pid:
             logger.info("Found socket path: %s", socket_path)
             return Path(socket_path)
     logger.error("Cannot find a matching Kitty socket.")
+    return None
 
 
 def get_active_kitty_pid(hyprland_socket_path: Path) -> str | None:
@@ -148,7 +150,7 @@ def get_active_kitty_pid(hyprland_socket_path: Path) -> str | None:
                 logger.debug("Match: %s", match)
                 if match:
                     return match.group(group_name)
-    except (OSError, socket.error):
+    except OSError:
         logger.exception("Error while getting the active Kitty PID.")
 
 
@@ -160,7 +162,7 @@ def _run_kitty_command(
         "kitty",
         "@",
         "--to",
-        f"unix:{str(socket_path.resolve())}",
+        f"unix:{socket_path.resolve()!s}",
         *args,
     ]
     if capture:
@@ -175,8 +177,7 @@ def _get_kitty_remote_tree(socket_path: Path) -> list[KittyOsWindow] | None:
         logger.error("Kitty remote ls failed with code: %s", result.returncode)
         return None
     try:
-        tree = cast(list[KittyOsWindow], json.loads(result.stdout))
-        return tree
+        return cast("list[KittyOsWindow]", json.loads(result.stdout))
     except ValueError:
         logger.exception("Failed to parse kitty @ ls output")
     return None
@@ -236,9 +237,7 @@ def _get_child_pids(pid: int) -> list[int]:
         return []
 
 
-def select_active_nvim_socket(
-    kitty_ls: list[KittyOsWindow], nvim_sockets: list[Path]
-) -> Path | None:
+def select_active_nvim_socket(kitty_ls: list[KittyOsWindow], nvim_sockets: list[Path]) -> Path | None:
     """Select active nvim socket in the focused kitty window.
 
     Strategy:
@@ -319,10 +318,11 @@ def try_nvim_move(nvim_socket: Path, direction: str) -> bool:
         if win_after != win_before:
             logger.info("Nvim move succeeded: %s", direction)
             return True
-        logger.info("Nvim move had no effect: %s", direction)
-        return False
     except Exception:
         logger.exception("Failed to execute nvim move: %s", direction)
+        return False
+    else:
+        logger.info("Nvim move had no effect: %s", direction)
         return False
     finally:
         try:
@@ -338,18 +338,18 @@ def hypr_dispatch(socket_path: Path, direction: str) -> None:
             sock.settimeout(SOCKET_TIMEOUT_SEC)
             sock.connect(str(socket_path))
             cmd = f'eval hl.dispatch(hl.dsp.focus({{ direction = "{direction}" }}))'
-            logging.debug("Send focus cmd to hyprland socket: %s", cmd)
+            logger.debug("Send focus cmd to hyprland socket: %s", cmd)
             sock.sendall(cmd.encode())
             response = sock.recv(4096).decode(errors="replace")
-            logging.debug("Hyprland socket response: %s", response)
-    except (OSError, socket.error):
+            logger.debug("Hyprland socket response: %s", response)
+    except OSError:
         logger.exception("Error while focusing a window through the Hyprland socket.")
 
 
-def main():
+def main() -> None:
     """Entry point for directional navigation across nvim/kitty/hyprland."""
-    if len(sys.argv) < 2:
-        print("Usage: hypr_kitty_nav <left|right|up|down>", file=sys.stderr)
+    if len(sys.argv) < MININUM_ARGS:
+        print("Usage: hypr_kitty_nav <left|right|up|down>", file=sys.stderr)  # noqa: T201
         sys.exit(1)
     arg = sys.argv[1]
     logger.info("hypr_kitty_nav launched with arg: %s", arg)
@@ -375,7 +375,7 @@ def main():
                     "kitty",
                     "@",
                     "--to",
-                    f"unix:{str(kitty_socket.absolute())}",
+                    f"unix:{kitty_socket.absolute()!s}",
                     "focus-window",
                     "--match",
                     f"neighbor:{kitty_dir}",

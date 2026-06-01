@@ -17,7 +17,19 @@ dev = ["ipython>=9.9.0", "prek>=0.4.3", "ruff>=0.15.15", "ty>=0.0.40"]
 [tool.ruff]
 line-length = 120
 [tool.ruff.lint]
-ignore = ["D100", "D102", "D104", "RUF001", "RUF002", "RUF003", "COM812"]
+ignore = [
+  "D100",
+  "D102",
+  "D104",
+  "RUF001",
+  "RUF002",
+  "RUF003",
+  "COM812",
+  "PLW1510",
+  "S603",
+  "S607",
+  "S101",
+]
 select = ["ALL"]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
