@@ -15,13 +15,14 @@ You have two OS-level windows open. The first is Kitty with two windows split ve
 Your cursor is in the left Kitty window. The first press of `SUPER+L` jumps to the right
 Kitty window; the second press jumps to the OS-level window on the right.
 
-- Inspired by https://github.com/joe-butler-23/hypr-kitty-nav
+- Inspired by https://github.com/joe-butler-23/hypr-nav
 
 ## Requirements
 - Python 3.12+
 - lsof
 - Hyprland
 - Kitty with `allow_remote_control=socket-only` and `listen-on=unix:/tmp/kitty`
+- pynvim
 
 #FIXME:
 - After `:restart` win+hjkl don't work within nvim
