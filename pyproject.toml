@@ -29,6 +29,8 @@ ignore = [
   "S603",
   "S607",
   "S101",
+  "S108",
+  "S606",
 ]
 select = ["ALL"]
 [tool.ruff.lint.pydocstyle]

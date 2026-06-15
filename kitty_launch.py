@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# Author: Sadykov Miron <MironSadykov@yandex.ru>
-# License: MIT
-# 2026
+"""Kitty launch.
 
-"""
---------------------------------------------------------------------------------
+Author: Sadykov Miron <MironSadykov@yandex.ru>
+License: MIT
+2026
+
 # What is this?
 
 This script for Hyprland and Kitty lets you keep one main Kitty instance and
@@ -62,9 +62,7 @@ KITTY_SOCKET_NAME: Final = "kitty_main"
 KITTY_SOCKET_PATH: Final = KITTY_SOCKET_DIR / KITTY_SOCKET_NAME
 XDG_RUNTIME_DIR: Final = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
 HYPRLAND_INSTANCE: Final = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", "")
-HYPRLAND_SOCKET: Final = (
-    Path(XDG_RUNTIME_DIR) / "hypr" / HYPRLAND_INSTANCE / ".socket.sock"
-)
+HYPRLAND_SOCKET: Final = Path(XDG_RUNTIME_DIR) / "hypr" / HYPRLAND_INSTANCE / ".socket.sock"
 LOG_PATH: Final = gettempdir() + "/kitty_launch.log"
 SOCKET_TIMEOUT_SEC: Final = 2
 DEBUG: Final = False  # Write logs to file. `tail -f /tmp/kitty_launch.log` to read it
@@ -124,7 +122,7 @@ def _get_hyprland_clients(hyprland_socket: Path) -> str | None:
                     break
                 data += chunk
             return data.decode()
-    except (OSError, socket.error):
+    except OSError:
         logger.exception("Error occurred while trying to connect to Hyprland socket.")
 
 
@@ -139,10 +137,10 @@ def _parse_clients(raw_text: str) -> list[HyprClient]:
             continue
         data = dict[str, str]()
         for line in lines[1:]:
-            line = line.strip()
-            if not line:
+            line_stripped = line.strip()
+            if not line_stripped:
                 continue
-            key, _, value = line.partition(":")
+            key, _, value = line_stripped.partition(":")
             if key and value:
                 key, value = key.strip(), value.strip()
                 if key in ("pid", "class", "title"):
@@ -151,12 +149,8 @@ def _parse_clients(raw_text: str) -> list[HyprClient]:
         if missing:
             logger.debug("Skipping malformed client block, missing: %s", missing)
             continue
-        clients.append(
-            HyprClient(class_=data["class"], title=data["title"], pid=data["pid"])
-        )
-    logger.debug(
-        "Found these hyprland windows: %s", "\n".join(str(client) for client in clients)
-    )
+        clients.append(HyprClient(class_=data["class"], title=data["title"], pid=data["pid"]))
+    logger.debug("Found these hyprland windows: %s", "\n".join(str(client) for client in clients))
     return clients
 
 
@@ -166,6 +160,7 @@ def _get_main_kitty_window_pid_by_class(windows: list[HyprClient]) -> str | None
         if window.class_ == MAIN_KITTY_CLASS:
             logger.info("Main kitty window PID found: %s", window.pid)
             return window.pid
+    return None
 
 
 def get_pid_of_main_kitty_window() -> str | None:
@@ -174,6 +169,7 @@ def get_pid_of_main_kitty_window() -> str | None:
     if clients:
         clients = _parse_clients(clients)
         return _get_main_kitty_window_pid_by_class(clients)
+    return None
 
 
 def select_socket_for_main_kitty(sockets: list[Path]) -> Path | None:
@@ -189,9 +185,7 @@ def select_socket_for_main_kitty(sockets: list[Path]) -> Path | None:
 
     logger.info("Got pid of active kitty")
     for socket_ in sockets:
-        match = (
-            pid in socket_.name or KITTY_SOCKET_NAME == socket_.name
-        ) and socket_.is_socket()
+        match = (pid in socket_.name or socket_.name == KITTY_SOCKET_NAME) and socket_.is_socket()
         logger.info("socket: %s, pid: %s, match: %s", socket, pid, match)
         if match:
             logger.info("Found socket matching pid: %s", socket)
@@ -210,8 +204,7 @@ def select_kitty_socket() -> Path | None:
     logger.info("Found sockets: %s", sockets)
     if not sockets:
         return None
-    else:
-        return select_socket_for_main_kitty(sockets)
+    return select_socket_for_main_kitty(sockets)
 
 
 def _run_kitty_command(
@@ -221,7 +214,7 @@ def _run_kitty_command(
         "kitty",
         "@",
         "--to",
-        f"unix:{str(socket_path.resolve())}",
+        f"unix:{socket_path.resolve()!s}",
         *args,
     ]
     if capture:
@@ -253,8 +246,7 @@ def _get_kitty_remote_tree(socket_path: Path) -> list[KittyOsWindow] | None:
         logger.error("Kitty remote ls failed with code: %s", result.returncode)
         return None
     try:
-        tree = cast(list[KittyOsWindow], json.loads(result.stdout))
-        return tree
+        return cast("list[KittyOsWindow]", json.loads(result.stdout))
     except ValueError:
         logger.exception("Failed to parse kitty @ ls output")
     return None
@@ -274,9 +266,7 @@ def _parse_kitty_ls(kitty_ls: list[KittyOsWindow]) -> str:
     return str(tab["windows"][0]["id"])
 
 
-def kitty_launch_through_socket(
-    socket_path: Path, args: Iterable[str], launch_type: str = "tab"
-) -> str | None:
+def kitty_launch_through_socket(socket_path: Path, args: Iterable[str], launch_type: str = "tab") -> str | None:
     """Launch Kitty through a remote-control socket.
 
     - Can't use `os.execvp` here because we need to focus on the window.
@@ -351,9 +341,7 @@ def _main() -> None:
     args = sys.argv[1:]
     logger.info("Passed arguments: %s", args)
     if not HYPRLAND_INSTANCE:
-        logger.error(
-            "HYPRLAND_INSTANCE_SIGNATURE is not set; cannot resolve Hyprland socket."
-        )
+        logger.error("HYPRLAND_INSTANCE_SIGNATURE is not set; cannot resolve Hyprland socket.")
         sys.exit(1)
     logger.info("HYPRLAND_SOCKET: %s", HYPRLAND_SOCKET)
     kitty_socket = select_kitty_socket()
@@ -367,6 +355,7 @@ def _main() -> None:
 
 
 def main() -> None:
+    """Launch."""
     try:
         _main()
     except Exception:
