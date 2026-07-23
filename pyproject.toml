@@ -33,6 +33,8 @@ ignore = [
   "S606",
 ]
 select = ["ALL"]
+[tool.ruff.lint.per-file-ignores]
+"waybar_gh_notifications.py" = ["T201"]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 [tool.ty]
