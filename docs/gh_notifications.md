@@ -2,11 +2,12 @@
 
 > Show unread GitHub notification count in waybar.
 
+<img width="59" height="43" alt="screenshot-2026-07-23_12-56-51" src="https://github.com/user-attachments/assets/4a4e59f5-72f0-4253-a875-d06f9490e1e2" />
+
 ## What It Does
 
 - Fetches unread notification count from GitHub API via `pygithub`.
 - Outputs JSON for waybar's `return-type: json`.
-- Handles missing network gracefully — prints `"error"` text instead of crashing.
 
 ## Requirements
 
@@ -41,12 +42,6 @@ GITHUB_TOKEN=ghp_...
   "on-click": "exec xdg-open https://github.com/notifications",
 },
 ```
-
-## Configuration
-
-Create a `.env` file in the same directory as the script:
-
-- `GITHUB_TOKEN` — GitHub personal access token with `notifications` scope.
 
 ## Troubleshooting
 
